@@ -38,52 +38,62 @@ class edge_adder {
   }
 };
 
+int max_cargo(graph& G, int&c, int& k, int& a){
+  edge_adder adder(G);
+  adder.add_edge(c, k, INT_MAX, 0);
+  adder.add_edge(a, c+1, INT_MAX, 0);
+  int max_cargo = boost::push_relabel_max_flow(G, c, c+1);
+  boost::remove_edge(c,k,G);
+  boost::remove_edge(a,c+1,G);
+  return max_cargo;
+}
+
+bool can_buy(graph& G, int&c, int &b, int& k, int& a, int& i){
+  edge_adder adder(G);
+  auto c_map = boost::get(boost::edge_capacity, G);
+  auto rc_map = boost::get(boost::edge_residual_capacity, G);
+  
+  adder.add_edge(c, k, i, 0);
+  adder.add_edge(a, c+1, i, 0);
+  boost::successive_shortest_path_nonnegative_weights(G, c, c+1);
+  int cost = boost::find_flow_cost(G);
+  int flow = 0;
+  out_edge_it e, eend;
+  for(boost::tie(e, eend) = boost::out_edges(boost::vertex(c,G), G); e != eend; ++e) {
+      flow += c_map[*e] - rc_map[*e];     
+    }
+  boost::remove_edge(c,k,G);
+  boost::remove_edge(a,c+1,G);
+  if(cost<=b and flow==i) return true;
+  else return false;
+}
+
 void testcase(){
   int c, g, b, k, a; 
   std::cin >> c >> g >> b >> k >> a;
-  
   graph G(c+2);
   edge_adder adder(G);  
-  auto c_map = boost::get(boost::edge_capacity, G);
-  auto r_map = boost::get(boost::edge_reverse, G);
-  auto rc_map = boost::get(boost::edge_residual_capacity, G);
-  
+
   for(int i=0; i<g; i++){
     int p_x, p_y, d, e; 
     std::cin >> p_x >> p_y >> d >> e;
     adder.add_edge(p_x, p_y, e, d);
   }
   
-  int flow = 0;
-  //bool exceeded = false;
-  //int index = 0;
-  for(int i=0; i<=10; i++){
-    adder.add_edge(c+2*i, k, i, 0);
-    adder.add_edge(a, c+2*i+1, i, 0);
-    boost::successive_shortest_path_nonnegative_weights(G, c+2*i, c+2*i+1);
-    int cost = boost::find_flow_cost(G);
-    int s_flow = 0;
-    out_edge_it e, eend;
-    for(boost::tie(e, eend) = boost::out_edges(boost::vertex(c+2*i,G), G); e != eend; ++e) {
-        s_flow += c_map[*e] - rc_map[*e];     
-    }
-    if(cost<=b) flow = s_flow;
-    else break;
-  }
+  //I get the maximum number of suitcases that can travel from k to a
+  //regardless of the budget. This is done to initialize the binary search
+  int head = max_cargo(G,c,k,a);
+  int tail = 0;
   
-  adder.add_edge(c+42, k, INT_MAX, 0);
-  adder.add_edge(a, c+42+1, INT_MAX, 0);
-  boost::successive_shortest_path_nonnegative_weights(G, c+42, c+42+1);
-  int cost = boost::find_flow_cost(G);
-  int s_flow = 0;
-  out_edge_it e, eend;
-  for(boost::tie(e, eend) = boost::out_edges(boost::vertex(c+42,G), G); e != eend; ++e) {
-      s_flow += c_map[*e] - rc_map[*e];     
+  //I do a binary search to find the maximum number of suitcases that I can
+  //transport knowing that I have b as budget
+  while(head>=tail){
+    int q = (head+tail)/2;
+    if(can_buy(G,c,b,k,a,q)) tail = q+1;
+    else head = q-1;
   }
+  std::cout << head << "\n";
   
-  if(cost<=b) flow = s_flow;
-  std::cout << flow << "\n";
- 
 }
 
 int main(){
