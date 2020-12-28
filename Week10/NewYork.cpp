@@ -41,7 +41,6 @@ void testcase(){
     window.insert(T[tail]);
     
     int head = tail;
-    //Be careful, in case n < m;
     //As I already inserted one Temperature I add m-1 terms
     for(int i=0; i<m-1; i++){
       head = routes[head];
