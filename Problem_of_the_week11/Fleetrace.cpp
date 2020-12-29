@@ -1,3 +1,7 @@
+/* I solve the problem via min-cost/maax-flow, by creating a bond of null cost and unit capacity between each of the 
+boat/sailor couples that are not linked according to the info provided by the test set. Then I run the algorithm 
+with a small adjustment to ensure the positivity of the costs, while maximizing the cost instead of minimizing it*/
+
 #include <iostream>
 // BGL includes
 #include <boost/graph/adjacency_list.hpp>
@@ -70,9 +74,11 @@ void testcase(){
     adder.add_edge(b+j, v_target, 1, 0);
   }
   
-  int flow = boost::push_relabel_max_flow(G, v_source, v_target);
-  boost::cycle_canceling(G);
+  boost::successive_shortest_path_nonnegative_weights(G, v_source, v_target);
   int cost = boost::find_flow_cost(G);
+  int flow = 0;
+  out_edge_it e, eend;
+  for(boost::tie(e, eend) = boost::out_edges(boost::vertex(v_source,G), G); e != eend; ++e) {flow += c_map[*e] - rc_map[*e];}
   
   std::cout << flow*50-cost << "\n";
   
