@@ -52,29 +52,27 @@ void testcase(){
   }
   
   //home_to_state contains the list of all homes and the state they are in
-  //home_to_state[i] contains the state it belongs to
-  std::cout << "Homes to states: " << "\n";
+  //home_to_state[i] contains the state home i belongs to
+  //std::cout << "Homes to states: " << "\n";
   std::vector<int> home_to_state;
   for(int i=0; i<M; i++){
     int this_home; std::cin >> this_home;
     home_to_state.push_back(this_home);
-    std::cout << home_to_state[i] << "\n";
+    //std::cout << home_to_state[i] << "\n";
   }
   
   std::vector<std::vector<int>> bids;
   bids.resize(N, std::vector<int>(M, 0));
   
   //For every buyer
-  std::cout << "Bids: " << "\n";
+  //std::cout << "Bids: " << "\n";
   for(int i=0; i<N; i++){
     //For every house
     for(int j=0; j<M; j++){
       int this_offer; std::cin >> this_offer;
       //bids[i][j] = the price that client i is willing to pay for home j
       bids[i][j] = this_offer;
-      std::cout << bids[i][j] << " ";
     }
-    std::cout << "\n";
   }
   
   graph G(N+M+S+2);
@@ -91,21 +89,32 @@ void testcase(){
       adder.add_edge(v_source, i, 1, 0);
     for(int j=0; j<M; j++){
       //I connect the clients to the homes
-      adder.add_edge(i, N+j, 1, -bids[i][j]);
+      adder.add_edge(i, N+j, 1, 100-bids[i][j]);
     }
   }
   
   for(int j=0; j<M; j++){
       //I connect the homes to the states
       int state = home_to_state[j];
-      adder.add_edge(N+j, N+M+state, 1, 0);
+      //Here I forgot the -1!! And I could not figure what was wrong!!!
+      //One needs to be careful as the states are counted from 1 to s and not
+      //from 0 to s-1 as I thought
+      adder.add_edge(N+j, N+M+state-1, 1, 0);
     }
   
   //I connect the states to the target
   for(int i=0; i<S; i++) {adder.add_edge(N+M+i, v_target, limits[i], 0);}
-  int my_flow = boost::push_relabel_max_flow(G, v_source, v_target);
-  boost::cycle_canceling(G);
-  int my_cost = -boost::find_flow_cost(G);
+  
+  boost::successive_shortest_path_nonnegative_weights(G, v_source, v_target);
+  int my_cost = boost::find_flow_cost(G);
+  
+  int my_flow = 0;
+  out_edge_it e, eend;
+  for(boost::tie(e, eend) = boost::out_edges(boost::vertex(v_source,G), G); e != eend; ++e) {
+      my_flow += c_map[*e] - rc_map[*e];     
+  }
+
+  my_cost = 100*my_flow-my_cost;
   
   std::cout << my_flow << " " << my_cost << "\n";
   
