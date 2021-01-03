@@ -47,7 +47,7 @@ class edge_adder {
 void testcase(){
   int n, m, k, l; std::cin >> n >> m >> k >> l;
   
-  //Could I make two graphs and connect them? 
+  //This singel graph will conceptually contain the two separate graphs 
   graph G(2*n);
   edge_adder adder(G);
   
