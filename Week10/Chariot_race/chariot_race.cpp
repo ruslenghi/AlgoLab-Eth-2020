@@ -74,35 +74,24 @@ int dont_buy_parent(std::vector<int> &memo_buy, std::vector<int> &memo_non_buy,
   //This is the case in which I buy p. If it do buy p I can refrain from buying its children
   //thus I used the buy_parent function
   int result_1 = cost[p];
+  int appo = 0;
   for(int i=0; i<(int)connections[p].size(); i++){
     int child = connections[p][i];
     result_1 += buy_parent(memo_buy, memo_non_buy, cost, connections, child);
+    appo += dont_buy_parent(memo_buy, memo_non_buy, cost, connections, child);
   }
   
   //What if I, instead, do not buy p. In this case I must buy at least one of its children!
   //Then I will not need to buy the children of this children, neither any of the other children of p
-  //However I must cicle over the chidren of p to find the best one to buy. This poses a bottleneck. 
-  //And I can only pass the first 3 test sets beacuse of it.
+  //However I must cicle over the chidren of p to find the best one to buy.
   int result_2 = INT_MAX;
   for(int i=0; i<(int)connections[p].size(); i++){
-    
-    int special = connections[p][i];
-    int mini = cost[special];
-    
-    //I add the buy parent version of all of the children of the special child
-    for(int j=0; j<(int)connections[special].size(); j++){
-      int special_child = connections[special][j];
-      mini += buy_parent(memo_buy, memo_non_buy, cost, connections, special_child);}
-    
-    //I add the don't buy version of all the children but the special one  
-    for(int j=0; j<(int)connections[p].size(); j++){
-      if(connections[p][j] == special) continue;
-      int child = connections[p][j];
-      mini += dont_buy_parent(memo_buy, memo_non_buy, cost, connections, child);
+    int special_child = connections[p][i];
+    int candidate = appo - dont_buy_parent(memo_buy, memo_non_buy, cost, connections, special_child) + cost[special_child];
+    for(int j=0; j<(int)connections[special_child].size(); j++){
+      candidate += buy_parent(memo_buy, memo_non_buy, cost, connections, connections[special_child][j]);
     }
-    
-    result_2 = std::min(result_2,mini);
-    
+    result_2 = std::min(candidate,result_2);
   }
   
   int minimum = std::min(result_1,result_2);
