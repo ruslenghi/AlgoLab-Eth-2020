@@ -1,46 +1,46 @@
-#include <iostream>
-#include <vector>
+#include<iostream>
+#include<vector>
 
-using namespace std;
-
-int r(vector<int> v, vector<vector<int>> &memo, int i, int j){
-
-    int sum = 0;
-    for(int k = i; k<=j; k++) sum += v[k];
-
-    if(i==j) {
-      return v[i];
-      memo[i][j]=v[i];
-    }
-      
-    if(memo[i][j] != -1) return memo[i][j];
-
-    memo[i][j] = max(memo[i][j], sum-r(v,memo,i+1,j));
-    memo[i][j] = max(memo[i][j], sum-r(v,memo,i,j-1));
-
-    return memo[i][j];
-  }
+int dp(std::vector<std::vector<int>> &memo, std::vector<int> &coins, int head, int tail){
+  
+  if(memo[head][tail] != -1) return memo[head][tail];
+  if(head == tail) return coins[head];
+  if(tail < head) return 0;
+  
+  if(head == (int)coins.size()-1) return coins[head];
+  if(head == (int)coins.size()-2) return std::max(coins[head],coins[head+1]);
+  
+  if(tail == 0) return coins[tail];
+  if(tail == 1) return std::max(coins[tail],coins[tail-1]);
+  
+  int a = coins[head] + std::min( dp(memo, coins, head + 2, tail), dp(memo, coins, head + 1, tail - 1));
+  
+  int b = coins[tail] + std::min( dp(memo, coins, head, tail - 2), dp(memo, coins, head + 1, tail - 1));
+                                  
+  memo[head][tail] = std::max(a,b);
+  return memo[head][tail];
+  
+}
 
 void testcase(){
+  int n; std::cin >> n;
   
-  int n = 0; cin >> n;
-  vector<int> v(n,0);
-  for(int i=0; i<n; i++){cin >> v[i];}
-  
-  // I create the memory matrix
-  vector<vector<int>> memo(n);
-  for ( int i = 0 ; i < n ; i++ ){memo[i].resize(n);}
-  
-  // I initialize the memory matrix to -1 in each entry O(n^2)
-  for ( int i = 0 ; i < n ; i++ ){
-    for ( int j = 0 ; j < n ; j++ ){memo[i][j]=-1;}
+  std::vector<int> coins;
+  for(int i=0; i<n; i++){
+    int v; std::cin >> v;
+    coins.push_back(v);
   }
-  cout << r(v, memo, 0, n-1) << "\n";
+  
+  std::vector<std::vector<int>> memo(n, std::vector<int>(n, -1));
+  int result = dp(memo, coins, 0, n-1);
+  
+  std::cout << result << "\n";
+  
 }
 
 int main(){
   std::ios_base::sync_with_stdio(false);
-  int t = 0; cin >> t;
+  int t; std::cin >> t;
   for(int i=0; i<t; i++){
     testcase();
   }
