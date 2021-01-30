@@ -1,79 +1,51 @@
 #include<iostream>
 #include<vector>
-#include <boost/graph/adjacency_list.hpp>
 
-typedef boost::adjacency_list<boost::vecS, boost::vecS, boost::directedS,
-  boost::no_property, boost::property<boost::edge_weight_t, int> >      weighted_graph;
-typedef boost::property_map<weighted_graph, boost::edge_weight_t>::type weight_map;
-typedef boost::graph_traits<weighted_graph>::edge_descriptor            edge_desc;
-typedef boost::graph_traits<weighted_graph>::vertex_descriptor          vertex_desc;
-typedef boost::graph_traits<weighted_graph>::out_edge_iterator out_edge_it;
-
-//I believe that what I am doing here is right, the problem is that I am using
-//the wrong data structures. The use of the graph probably slows down the code 
-//Try using an stl adjacency list instead
-
-long long int dp(std::vector<std::vector<long long int>> &memo, weighted_graph &G, int i, int k){
+long long int dp(std::vector<std::vector<long long int>> &memo, std::vector<std::vector<std::pair<int,int>>> &table, int p, int k){
   
-  if(memo[i][k] != -1) return memo[i][k];
-  if(k==0) return 0;
+  if(memo[p][k] != -1) return memo[p][k];
+  if(k == 0) return 0; //In case I have no more moves left I get zero points
   
-  weight_map weights = boost::get(boost::edge_weight, G);
-  std::vector<std::pair<int,int>> neighbours;
-  
-  //This is probably the part that slows down the code
-  out_edge_it oe_beg, oe_end;
-  for(boost::tie(oe_beg, oe_end) = boost::out_edges(i, G); oe_beg != oe_end; ++oe_beg) {
-    int new_neighbour = boost::target(*oe_beg, G);
-    int new_weight = weights[*oe_beg];
-    neighbours.push_back(std::make_pair(new_neighbour, new_weight));
-  }
-  
-  //In case I am at a dead end I can go back to 0 without any spending!
-  if((int)neighbours.size() == 0){return dp(memo, G, 0, k);}
-  
+  //In case I am at a node that has no offspring, 
+  //I can move back to the start without any additional cost
+  if(table[p].size() == 0){
+    memo[p][k] = dp(memo, table, 0, k);
+    return memo[p][k];}
+    
   long long int result = 0;
-  for(int i = 0; i < (int)neighbours.size(); i++){
-    result = std::max(result, dp(memo, G, neighbours[i].first, k-1) + neighbours[i].second);
+  for(int i=0; i<(int)table[p].size(); i++){
+    result = std::max(result, dp(memo, table, table[p][i].first, k-1) + table[p][i].second);
   }
   
-  memo[i][k] = result;
-  return memo[i][k];
+  memo[p][k] = result;
+  return memo[p][k];
   
 }
 
 void testcase(){
-  long long int n, m, x, k; std::cin >> n >> m >> x >> k;
   
-  weighted_graph G(n);
-  weight_map weights = boost::get(boost::edge_weight, G);
-  edge_desc e;
+  int n, m; std::cin >> n >> m;
+  long long int x; std::cin >> x;
+  int k; std::cin >> k;
   
+  //table[i][j] will tell me that the value of the j-th pair I can pick when starting from i
+  std::vector<std::vector<std::pair<int,int>>> table(n, std::vector<std::pair<int,int>>());
   for(int i=0; i<m; i++){
     int u, v, p; std::cin >> u >> v >> p;
-    e = boost::add_edge(u, v, G).first; weights[e]=p;
+    table[u].push_back(std::make_pair(v,p));
   }
   
-  //memo[i][j] returns the maximum achievable score when starting from point i 
-  //of the board and when we have j moves to make
-  std::vector<std::vector<long long int>> memo(n+1 ,std::vector<long long int> (k+1, -1));
-
-  int impossible = true;
-  int tail = 1;
-  int head = k;
-  
-  //The binary search does not speed up the code much
-  //as the subproblems need to be solved in any case...
-  while(head >= tail){
-    int q = (head +tail)/2;
-    if(dp(memo, G, 0, q) >= x) {
-      head = q-1;
-      impossible = false;}
-    else tail = q+1;
+  //Now I make a memory. memo[i][j] will store how many points I can get if I start in i
+  //and considering that I have j moves left 
+  std::vector<std::vector<long long int>> memo(n, std::vector<long long int> (k+1, -1));
+  for(int i=0; i<=k; i++){
+    long long int result = dp(memo, table, 0, i);
+    if(result >= x){
+      std::cout << i << "\n";
+      return;}
   }
   
-  if(impossible) std::cout << "Impossible\n";
-  else std::cout << tail << "\n";
+  std::cout << "Impossible\n";
   
 }
 
