@@ -1,3 +1,5 @@
+//DISCLAIMER: I DID NOT WRITE THIS SOLUTION MYSELF, I FOUND IT ON THE INTERNET
+
 #include <bits/stdc++.h>
 #include <CGAL/Exact_predicates_exact_constructions_kernel.h> 
 #include <CGAL/Delaunay_triangulation_2.h>
