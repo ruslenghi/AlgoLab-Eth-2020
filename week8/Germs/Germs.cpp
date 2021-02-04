@@ -1,86 +1,78 @@
-//DISCLAIMER: i DID NOT WRITE THIS SOLUTION
+#include<iostream> 
+#include<vector>
+#include<algorithm>
 
 #include <CGAL/Exact_predicates_inexact_constructions_kernel.h>
 #include <CGAL/Delaunay_triangulation_2.h>
-#include <map>
-#include <algorithm>
+#include <CGAL/Triangulation_vertex_base_with_info_2.h>
 
 typedef CGAL::Exact_predicates_inexact_constructions_kernel K;
-typedef CGAL::Delaunay_triangulation_2<K> Triangulation;
-typedef Triangulation::Edge_iterator Edge_iterator;
-typedef K::Segment_2 Segment;
-typedef K::Point_2 Point;
-typedef std::map<Point, K::FT> Map;
-
-// This map stores each point and the squared distance to the closest collision
-void update_map(Map& my_map, Point& my_point, K::FT& dist){
-  auto search = my_map.find(my_point);
-  if(search == my_map.end()) my_map.insert(std::pair<Point, K::FT>(my_point, dist));
-  else search->second = std::min(search->second, dist);
-}
+typedef CGAL::Triangulation_face_base_2<K> Fb;
+typedef CGAL::Triangulation_vertex_base_with_info_2<double, K> Vb;
+typedef CGAL::Triangulation_data_structure_2<Vb,Fb> Tds;
+typedef CGAL::Delaunay_triangulation_2<K,Tds> Triangulation;
 
 void testcase(int n){
-  int left, bottom, right, top; 
-  std::cin >> left >> bottom >> right >> top;
+  
+  int l, b, r, t;
+  std::cin >> l >> b >> r >> t;
+  
   std::vector<K::Point_2> pts;
-  pts.reserve(n);
-  for (std::size_t i = 0; i < n; ++i) {
-    int x, y;
+  for(int i=0; i<n; i++){
+    long long int x, y; 
     std::cin >> x >> y;
-    pts.push_back(K::Point_2(x, y));
+    pts.push_back(K::Point_2(x,y));
   }
   
-  Triangulation t;
-  t.insert(pts.begin(), pts.end());
-  Map my_map;
+  Triangulation T;
+  T.insert(pts.begin(), pts.end());
   
-  for (Edge_iterator e = t.finite_edges_begin(); e != t.finite_edges_end(); ++e) {
-    Point p1 = e->first->vertex((e->second + 1) % 3)->point();  
-    Point p2 = e->first->vertex((e->second + 2) % 3)->point();
-    K::FT sqdist = CGAL::squared_distance(p1, p2) / 4;
-    update_map(my_map, p1, sqdist);
-    update_map(my_map, p2, sqdist);
+  for(auto v = T.finite_vertices_begin(); v != T.finite_vertices_end(); ++v){
+    K::Point_2 p = v->point(); double d = pow(2, 103);
+    if( (p.x()-l)*(p.x()-l) < d) d = (p.x()-l)*(p.x()-l);
+    if( (r-p.x())*(r-p.x()) < d) d = (r-p.x())*(r-p.x());
+    if( (p.y()-b)*(p.y()-b) < d) d = (p.y()-b)*(p.y()-b);
+    if( (t-p.y())*(t-p.y()) < d) d = (t-p.y())*(t-p.y());
+    v->info() = d;
   }
   
-  //Here I check all the distances between the points and the box's borders
-  Point lt(left,top), rt(right,top), rb(right,bottom), lb(left,bottom);
-  std::vector<Segment> segments;
-  segments.push_back({lt,rt});
-  segments.push_back({rt,rb});
-  segments.push_back({rb,lb});
-  segments.push_back({lb,lt});
-  for(Point& p : pts){
-    for(Segment& s : segments){
-      K::FT squared_dist = CGAL::squared_distance(p, s);
-      update_map(my_map, p, squared_dist);
-    }
+  //I set every vertex to its length death
+  for(auto e = T.finite_edges_begin(); e != T.finite_edges_end(); ++e){
+    //I get the vertices of the edge
+    Triangulation::Vertex_handle v1 = e->first->vertex((e->second + 1) % 3);
+    Triangulation::Vertex_handle v2 = e->first->vertex((e->second + 2) % 3);
+    // the /4 is there because the germs meet halfway 
+    double d = CGAL::squared_distance(v1->point(), v2->point())/4;
+    v1->info() = std::min(d, v1->info());
+    v2->info() = std::min(d, v2->info());
   }
   
-  //Now I have a map with its keys being the points and its values being the
-  //squared distances from the closest objects when collision happens
-  std::vector<int> my_times;
-  for(Point& p : pts){
-      auto search = my_map.find(p);
-      double squared_distance = CGAL::to_double(search->second);
-      double actual_time = std::sqrt(std::sqrt(squared_distance)-0.5);
-      int my_time = int(actual_time);
-      if (actual_time - my_time > 0) {my_time += 1;}
-      my_times.push_back(my_time);
-    }
-    
-    std::sort(my_times.begin(), my_times.end());
-    int middle = 0;
-    if(n != 1) middle = int(n/2); 
-    std::cout << my_times[0] << " " << my_times[middle] << " " << my_times[n-1] << "\n";
+  std::vector<double> death_len;
+  for(auto v = T.finite_vertices_begin(); v != T.finite_vertices_end(); ++v){
+    death_len.push_back(v->info());
   }
+  
+  std::sort(death_len.begin(), death_len.end());
+  
+  int middle = n/2;
+  
+  double f_l = std::sqrt(death_len[0]);
+  double m_l = std::sqrt(death_len[middle]);
+  double l_l = std::sqrt(death_len[n-1]);
+  
+  double f_t = std::ceil(std::sqrt(f_l-0.5));
+  double m_t = std::ceil(std::sqrt(m_l-0.5));
+  double l_t = std::ceil(std::sqrt(l_l-0.5));
+  
+  std::cout << f_t <<" " <<  m_t << " " << l_t << "\n";
+  
+}
 
 int main(){
+  std::ios_base::sync_with_stdio(false);
   while(true){
-    std::size_t n;
-    std::cin >> n;
-    if (n == 0) {
-        return 0;
-      }
-    testcase(n);
+    int n; std::cin >> n;
+    if(n == 0) break;
+    testcase(n); 
   }
 }
