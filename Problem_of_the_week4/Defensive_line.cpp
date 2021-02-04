@@ -1,110 +1,66 @@
 #include<iostream>
 #include<vector>
-#include<queue>
 
-int length(std::pair<int,int>& p){
-  int l = (p.second-p.first) + 1;
-  return l;
-} 
+using namespace std;
 
-bool conflict(std::pair<int,int>& p_1, std::pair<int,int>& p_2){
-  bool c = true;
-  if(p_1.first > p_2.second) c = false;
-  if(p_2.first > p_1.second) c = false;
-  return c;
-
+std::vector<int> windows(std::vector<int> &v, int k, int n){
+  
+  std::vector<int> h(n, -1);
+  int head = 0;
+  int tail = 0;
+  int sum = v[head];
+  while(head != n){
+    
+    if(sum == k){
+      //Just under this circumstance h can have a non -1 entry!
+      h[head] = head-tail+1;//Be careful with this one!!
+      sum -= v[tail];
+      head++;
+      tail++;
+      sum += v[head]; 
+    }
+    
+    else if(sum < k){
+      head++;
+      sum += v[head];
+    }
+    
+    else if(sum > k){
+      sum -= v[tail];
+      tail++;
+    }
+      
+  }
+  
+  return h;
+  
 }
 
 void testcase(){
-  int n, m, k; std::cin >> n >> m >> k;
   
-  std::vector<int> defenders;
+  int n, m, k; 
+  cin >> n >> m >> k;
+  
+  std::vector<int> v;
   for(int i=0; i<n; i++){
-    int my_defender; std::cin >> my_defender;
-    defenders.push_back(my_defender);
+    int value; cin >> value;
+    v.push_back(value);
   }
   
-  std::queue<int> Q;
-  std::vector<std::pair<int,int>> segments;
-  int total_defense = 0;
-  int head = 0;
-  int i = 0; 
+  vector<int> h = windows(v, k, n);
+  vector<vector<pair<int,int>>> DP(m+1, vector<pair<int,int>> (n+1, make_pair(0,0)));
   
-  //I traverse the whole set of defenders in a sliding windows faschion
-  //I think my implementation is quite ugly, but it works
-  
-  //Here I previously put head instead of i. Don't do that!!! It resulted in an 
-  //error that took quite a but of time to debug!
-  while(i < n){
-    
-    if(total_defense < k){
-      Q.push(i);
-      head = i;
-      total_defense += defenders[i];
-      i++;
-    }
-    
-    if(total_defense > k){
-      total_defense -= defenders[Q.front()];
-      Q.pop();
-    }
-    
-    if(total_defense == k){
-      std::pair<int,int> my_pair = std::make_pair(Q.front(),head);
-      segments.push_back(my_pair);
-      head = i;
-      if(i != n){
-        total_defense += defenders[i];
-        total_defense -= defenders[Q.front()];
-        Q.pop(); Q.push(i); 
-        i++;}
-    }
-    
-  }
-  
-  /*std::cout << "these are the possible segments: " << "\n";
-  for(int j=0; j<segments.size(); j++){
-    std::cout << segments[j].first << " " << segments[j].second << " ";
-    std::cout << "this segment covers " << length(segments[j]) << " players" << "\n";
-  }*/
-  
-  //Be careful! This implementation of sliding windows worsk fine on the samples
-  //however I am not 100% sure it works fine for all the test sets
-  
-  if(segments.size() < m) {
-    std::cout<< "fail" << "\n";
-    return;
-  }
-  
-  int total_l = 0;
-  
-  //This is for the m = 2 case, with small n also
-  if(m==2){
-    for(int a=0; a<segments.size()-1; a++){
-      for(int b=a+1; b<segments.size(); b++){
-        if(!conflict(segments[a],segments[b])){
-          total_l = std::max(total_l,length(segments[a])+length(segments[b]));
-        }
+  for(int i = 1; i <= m; i++)
+      for(int j = 1; j <= n; j++) {
+        if(h[j-1] == -1){DP[i][j] = DP[i][j-1]; continue;}
+          if(DP[i-1][j-h[j-1]].first + h[j-1] > DP[i][j-1].first) 
+              DP[i][j] = make_pair(DP[i-1][j-h[j-1]].first + h[j-1], DP[i-1][j-h[j-1]].second + 1);
+          else DP[i][j] = DP[i][j-1];
       }
-    }
-  }
-  
-  if(m==1){
-    for(int b=0; b<segments.size(); b++){
-      total_l = std::max(total_l,length(segments[b]));
-    }
-  }
-  
-  if(total_l==0) {
-    std::cout<< "fail" << "\n";
-    return;
-  }
-  
-  std::cout << total_l << "\n";
-  
-  //This code runs correctly on test 3 as well, but way too slowly (11s/0.5s)
-  //You need to speed it up by implementing the right DP solution!
-  
+
+  if(DP[m][n].second != m) cout << "fail\n";
+  else cout << DP[m][n].first << "\n";
+
 }
 
 int main(){
