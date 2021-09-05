@@ -1,5 +1,3 @@
-//DISCLAIMER: I did not write this solution myself, i have found it on the internet
-
 #include<iostream>
 #include<vector>
 #include<map>
